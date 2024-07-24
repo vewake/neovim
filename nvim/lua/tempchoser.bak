@@ -1,0 +1,51 @@
+-- ~/.config/nvim/lua/template_chooser.lua
+
+local M = {}
+
+local templates_dir = vim.fn.stdpath("config") .. "/templates/"
+
+-- Function to determine the template directory based on file type
+local function get_template_dir()
+  local filetype = vim.bo.filetype
+  local template_dir = templates_dir .. filetype
+  return template_dir
+end
+
+-- Function to list and select a template
+function M.choose_template()
+  local template_dir = get_template_dir()
+  if vim.fn.isdirectory(template_dir) == 0 then
+    print("No templates found for filetype " .. vim.bo.filetype)
+    return
+  end
+
+  require("telescope.builtin").find_files({
+    prompt_title = "Choose Template",
+    cwd = template_dir,
+    attach_mappings = function(prompt_bufnr, map)
+      local actions = require("telescope.actions")
+      local action_state = require("telescope.actions.state")
+
+      local function on_select_template()
+        local selection = action_state.get_selected_entry()
+        actions.close(prompt_bufnr)
+        vim.cmd("edit " .. selection.path)
+      end
+
+      map("i", "<CR>", on_select_template)
+      map("n", "<CR>", on_select_template)
+
+      return true
+    end,
+  })
+end
+
+-- Set keybinding to choose template
+vim.api.nvim_set_keymap(
+  "n",
+  "<leader>T",
+  ':lua require("template_chooser").choose_template()<CR>',
+  { noremap = true, silent = true }
+)
+
+return M
